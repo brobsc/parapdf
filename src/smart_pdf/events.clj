@@ -7,8 +7,8 @@
 (defmethod event-handler ::drag-file-hover
   [{:keys [drag-target fx/context]}]
   {:context
-   (let [drag-src (fx/sub context :drag-src)]
-     (if-not (= drag-src drag-target)
+   (let [old-target (fx/sub context :drag-target)]
+     (if-not (= old-target drag-target)
        (fx/swap-context context assoc :drag-target drag-target)
        context))})
 
@@ -29,12 +29,24 @@
                   new-files (if-not (= target src)
                               (let [idx-target (.indexOf files target)
                                     idx-src (.indexOf files src)]
-                                (assoc files idx-target src idx-src target))
+                                (-> (vec files)
+                                    (assoc idx-target src)
+                                    (assoc idx-src target)))
                               files)]
-              (fx/swap-context context merge {:drag-src ""
-                                              :drag-target ""
+              (fx/swap-context context merge {:drag-src {}
+                                              :drag-target {}
                                               :files new-files}))})
+
+(defmethod event-handler ::open-file-dialog
+  [{:keys [fx/context]}]
+  {:file-dialog {:type :open
+                 :on-choose {:event/type ::add-file}}})
+
+(defmethod event-handler ::add-file
+  [{:keys [fx/context files]}]
+  {:context (fx/swap-context context update :files concat files)})
 
 (defmethod event-handler :default
   [e]
+  (println "Unhadled event" (:event/type e))
   (prn e))

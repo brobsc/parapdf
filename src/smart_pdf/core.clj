@@ -8,10 +8,9 @@
 
 (def ctx (atom
              (fx/create-context
-               {:files ["ae"
-                        "bc"
-                        "fg"]
+               {:files []
                 :showing true
+                :file-dialog true
                 :drag-src ""
                 :drag-target ""
                 :current-file "pdfjs/web/relatorio.pdf"
@@ -31,14 +30,37 @@
         @*promise)
       (f e dispatch!))))
 
+#_(defn http-effect [v dispatch!]
+  (try
+    (http/request
+      (-> v
+          (assoc :async? true :as :byte-array)
+          (dissoc :on-response :on-exception))
+      (fn [response]
+        (dispatch! (assoc (:on-response v) :response response)))
+      (fn [exception]
+        (dispatch! (assoc (:on-exception v) :exception exception))))
+    (catch Exception e
+      (dispatch! (assoc (:on-exception v) :exception e)))))
+
+(defn show-file-dialog [v dispatch!]
+  (fx/on-fx-thread
+    (fx/instance
+      (fx/create-component
+        {:fx/type fx/ext-instance-factory
+         :create #(dispatch! (assoc (:on-choose v) :files
+                                    (-> (javafx.stage.FileChooser.)
+                                        (.showOpenMultipleDialog nil))))}))))
+
 (def event-handler
   (-> e/event-handler
       (fx/wrap-co-effects
         {:fx/context (fx/make-deref-co-effect ctx)})
       (fx/wrap-effects
-        {:context (fn [v _] (fx/on-fx-thread (reset! ctx v)))
-         :dispatch fx/dispatch-effect })
-      (wrap-async)))
+        {:context (fx/make-reset-effect ctx)
+         :dispatch fx/dispatch-effect
+         :file-dialog show-file-dialog})
+      #_(wrap-async)))
 
 (def renderer
   (fx/create-renderer

@@ -3,14 +3,20 @@
             [smart-pdf.events :as events]
             [clojure.java.io :as io]))
 
+(defn add-file-button [_]
+  {:fx/type :button
+   :text "Adicionar arquivos"
+   :on-action {:event/type ::events/open-file-dialog}})
+
 (defn files-list [{:keys [fx/context]}]
   (let [target (fx/sub context :drag-target)]
     {:fx/type :list-view
      :style {:-fx-background-color :lightgray
              :-fx-alignment :top-left}
      :cell-factory (fn [f]
-                     {:text f
+                     {:text (.getName f)
                       :style {:-fx-border-color :lightblue
+                              :-fx-font-size 10
                               :-fx-border-width (if (= f target)
                                                   [3 0 0 0]
                                                   [0 0 0 0])}

@@ -2,6 +2,10 @@
   (:require [cljfx.api :as fx]
             [smart-pdf.components :as c]))
 
+(defn file-chooser [{:keys [fx/context]}]
+  {:fx/type :file-chooser
+   :showing (fx/sub context :file-dialog)})
+
 (defn main-view [{:keys [fx/context]}]
   {:fx/type :stage
    :showing (fx/sub context :showing)
@@ -19,10 +23,9 @@
                               :anchor-pane/left 40
                               :anchor-pane/right 375
                               :anchor-pane/bottom 80}
-                             {:fx/type :button
+                             {:fx/type c/add-file-button
                               :anchor-pane/bottom 40
-                              :anchor-pane/left 40
-                              :text "+"}
+                              :anchor-pane/left 40}
                              {:fx/type c/file-view
                               :anchor-pane/right 40
                               :anchor-pane/top 80
