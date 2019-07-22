@@ -1,7 +1,8 @@
 (ns smart-pdf.core
   (:require [cljfx.api :as fx]
             [clojure.java.io :as io])
-  (:import [javafx.scene.input TransferMode ClipboardContent]))
+  (:import [javafx.scene.input TransferMode
+            ClipboardContent MouseEvent]))
 
 
 (def ctx (atom
@@ -32,8 +33,10 @@
                                                   [0 0 0 0])}
                       :on-drag-detected {:event/type ::drag-file-start
                                          :drag-file f}
-                      :on-drag-entered {:event/type ::drag-file-hover
-                                        :drag-target f} })
+                      :on-mouse-drag-entered {:event/type ::drag-file-hover
+                                              :drag-target f}
+                      :on-mouse-drag-released {:event/type ::drag-file-end
+                                               :drag-target f}})
      :items (fx/sub context :files)}))
 
 (defn file-view [{:keys [fx/context]}]
@@ -97,18 +100,28 @@
 (defmethod event-handler ::drag-file-start
   [{:keys [drag-file] :as e}]
   (let [fx-event (:fx/event e)]
-    #_(println "drag from " drag-file)
+    (println "drag from " drag-file)
     (-> fx-event
         (.getSource)
-        (.startDragAndDrop TransferMode/ANY)
-        (.setContent (doto (ClipboardContent.)
-                       (.putString drag-file))))
+        (.startFullDrag))
     (swap! ctx fx/swap-context assoc-in [:drag-src] drag-file)
     (.consume fx-event)))
 
 (defmethod event-handler ::drag-file-end
   [e]
-  #_(println "drag to " (:drag-file e)))
+
+  (let [files (fx/sub @ctx :files)
+        target (fx/sub @ctx :drag-target)
+        src (fx/sub @ctx :drag-src)
+        new-files (if-not (= target src)
+                    (let [idx-target (.indexOf files target)
+                          idx-src (.indexOf files src)]
+                      (assoc files idx-target src idx-src target))
+                    files)]
+    (swap! ctx fx/swap-context merge {:drag-src ""
+                                    :drag-target ""
+                                    :files new-files}))
+  )
 
 (defmethod event-handler :default
   [e]
