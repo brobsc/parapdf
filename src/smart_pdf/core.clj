@@ -2,6 +2,7 @@
   (:require
     [cljfx.api :as fx]
     [smart-pdf.views :as v]
+    [pdfboxing.merge :as pdf]
     [smart-pdf.events :as e])
   (:import [javafx.scene.input TransferMode
             ClipboardContent MouseEvent]))
@@ -13,7 +14,7 @@
                 :file-dialog true
                 :drag-src ""
                 :drag-target ""
-                :current-file "pdfjs/web/relatorio.pdf"
+                :current-file nil
                 :prefs {}})))
 
 (defn- process-event [_ f e dispatch-async! *maybe-promise]
@@ -30,18 +31,6 @@
         @*promise)
       (f e dispatch!))))
 
-#_(defn http-effect [v dispatch!]
-  (try
-    (http/request
-      (-> v
-          (assoc :async? true :as :byte-array)
-          (dissoc :on-response :on-exception))
-      (fn [response]
-        (dispatch! (assoc (:on-response v) :response response)))
-      (fn [exception]
-        (dispatch! (assoc (:on-exception v) :exception exception))))
-    (catch Exception e
-      (dispatch! (assoc (:on-exception v) :exception e)))))
 
 (defn show-file-dialog [v dispatch!]
   (fx/on-fx-thread
@@ -52,6 +41,12 @@
                                     (-> (javafx.stage.FileChooser.)
                                         (.showOpenMultipleDialog nil))))}))))
 
+(defn save-pdf [v _]
+  (when-let [files (some->> (:files v)
+                            (map #(.getPath %)))]
+    (pdf/merge-pdfs :input files
+                    :output "foo.pdf")))
+
 (def event-handler
   (-> e/event-handler
       (fx/wrap-co-effects
@@ -59,8 +54,9 @@
       (fx/wrap-effects
         {:context (fx/make-reset-effect ctx)
          :dispatch fx/dispatch-effect
+         :save-pdf save-pdf
          :file-dialog show-file-dialog})
-      #_(wrap-async)))
+      (wrap-async)))
 
 (def renderer
   (fx/create-renderer

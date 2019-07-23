@@ -44,7 +44,16 @@
 
 (defmethod event-handler ::add-file
   [{:keys [fx/context files]}]
-  {:context (fx/swap-context context update :files concat files)})
+  {:context (fx/swap-context context update :files into files)})
+
+(defmethod event-handler ::file-click
+  [{:keys [fx/context click-target] :as e}]
+  (when (= 2 (.getClickCount (:fx/event e)))
+    {:context (fx/swap-context context assoc :current-file click-target)}))
+
+(defmethod event-handler ::save-pdf
+  [{:keys [fx/context]}]
+  {:save-pdf {:files (fx/sub context :files)}})
 
 (defmethod event-handler :default
   [e]

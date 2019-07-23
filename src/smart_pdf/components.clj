@@ -1,7 +1,8 @@
 (ns smart-pdf.components
-  (:require [cljfx.api :as fx]
-            [smart-pdf.events :as events]
-            [clojure.java.io :as io]))
+  (:require
+    [cljfx.api :as fx]
+    [smart-pdf.events :as events]
+    [clojure.java.io :as io]))
 
 (defn add-file-button [_]
   {:fx/type :button
@@ -26,13 +27,17 @@
                       :on-mouse-drag-entered {:event/type ::events/drag-file-hover
                                               :drag-target f}
                       :on-mouse-drag-released {:event/type ::events/drag-file-end
-                                               :drag-target f}})
+                                               :drag-target f}
+
+                      :on-mouse-clicked {:event/type ::events/file-click
+                                         :click-target f}})
      :items (fx/sub context :files)}))
 
 (defn file-view [{:keys [fx/context]}]
   {:fx/type :web-view
-   :url (str (io/resource "pdfjs/web/viewer.html")
-             "?file=" (io/resource (fx/sub context :current-file)))})
+   :url (when (fx/sub context :current-file)
+          (str (io/resource "pdfjs/web/viewer.html")
+               "?file=" (.toURI (fx/sub context :current-file))))})
 
 (defn top-button-bar [{:keys [fx/context]}]
   {:fx/type :h-box
@@ -44,3 +49,9 @@
                :text "Dividir"}
               {:fx/type :button
                :text "Otimizar"}]})
+
+(defn save-button [{:keys [fx/context]}]
+  {:fx/type :button
+   :text "Salvar"
+   :default-button true
+   :on-action {:event/type ::events/save-pdf}})
