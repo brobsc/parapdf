@@ -17,21 +17,20 @@
                   :children [{:fx/type c/top-button-bar
                               :anchor-pane/top 40
                               :anchor-pane/left 200
-                              :anchor-pane/right 40}
+                              :anchor-pane/right 37}
                              {:fx/type c/files-list
                               :anchor-pane/top 80
-                              :anchor-pane/left 40
+                              :anchor-pane/left 37
                               :anchor-pane/right 375
                               :anchor-pane/bottom 80}
                              {:fx/type c/add-file-button
                               :anchor-pane/bottom 40
-                              :anchor-pane/left 40}
+                              :anchor-pane/left 37}
                              {:fx/type c/file-view
-                              :anchor-pane/right 40
+                              :anchor-pane/right 37
                               :anchor-pane/top 80
                               :anchor-pane/left 200
                               :anchor-pane/bottom 80}
-                             {:fx/type :button
-                              :anchor-pane/right 40
-                              :anchor-pane/bottom 40
-                              :text "Salvar"}]}}})
+                             {:fx/type c/save-button
+                              :anchor-pane/right 37
+                              :anchor-pane/bottom 40 }]}}})

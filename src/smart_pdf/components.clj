@@ -48,6 +48,8 @@
               {:fx/type :button
                :text "Dividir"}
               {:fx/type :button
+               :on-action {:event/type ::events/optimize-pdf
+                           :file (fx/sub context :current-file)}
                :text "Otimizar"}]})
 
 (defn save-button [{:keys [fx/context]}]

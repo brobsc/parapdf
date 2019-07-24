@@ -40,12 +40,17 @@
 (defmethod event-handler ::open-file-dialog
   [{:keys [fx/context]}]
   {:file-dialog {:type :open
-                 :on-choose {:event/type ::add-file}}})
+                 :on-choose {:event/type ::add-file }}})
 
 (defmethod event-handler ::add-file
+  [{:keys [files]}]
+  {:add-files {:files files
+               :on-add {:event/type ::concat-files
+                        :fx/sync true}}})
+
+(defmethod event-handler ::concat-files
   [{:keys [fx/context files]}]
-  {:add-files {:context context
-              :files files}})
+  {:context (fx/swap-context context update :files concat files)})
 
 (defmethod event-handler ::file-click
   [{:keys [fx/context click-target] :as e}]
@@ -55,6 +60,22 @@
 (defmethod event-handler ::save-pdf
   [{:keys [fx/context]}]
   {:save-pdf {:files (fx/sub context :files)}})
+
+(defmethod event-handler ::optimize-pdf
+  [{:keys [file]}]
+  {:optimize-pdf {:file file}})
+
+(defmethod event-handler ::sub-file
+  [{:keys [src target fx/context]}]
+  {:context
+   (let [files (fx/sub context :files)
+         files (if-not (= target src)
+                 (let [ idx-src (.indexOf files src)]
+                   (-> (vec files)
+                       (assoc idx-src target)))
+                 files)]
+     (fx/swap-context context merge {:current-file nil
+                                     :files files}))})
 
 (defmethod event-handler :default
   [e]

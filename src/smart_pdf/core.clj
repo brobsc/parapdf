@@ -68,12 +68,19 @@
   (let [s (.getName f)]
     (subs s (+ 1 (clojure.string/last-index-of s ".")))))
 
-(defn add-files [{:keys [files]} _]
+(defn add-files [{:keys [files on-add]} dispatch!]
   (let [files (map (fn [f]
                      (if-not (= "pdf" (ext f))
                        (pdf/img->pdf f)
                        f)) files)]
-    (swap! ctx fx/swap-context update :files concat files)))
+    (dispatch! (assoc on-add :files files))))
+
+(defn optimize-pdf [{:keys [file]} dispatch!]
+  (let [optimized (pdf/optimize-pdf file)]
+    (dispatch! {:event/type ::e/sub-file
+                :src file
+                :fx/sync true
+                :target optimized})))
 
 (def event-handler
   (-> e/event-handler
@@ -84,8 +91,9 @@
          :dispatch fx/dispatch-effect
          :save-pdf save-pdf
          :add-files add-files
+         :optimize-pdf optimize-pdf
          :file-dialog show-file-dialog})
-      #_(wrap-async)))
+      (wrap-async)))
 
 (def renderer
   (fx/create-renderer
