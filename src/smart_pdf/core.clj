@@ -2,10 +2,16 @@
   (:require
     [cljfx.api :as fx]
     [smart-pdf.views :as v]
-    [pdfboxing.merge :as pdf]
+    [smart-pdf.tools.pdf :as pdf]
     [smart-pdf.events :as e])
-  (:import [javafx.scene.input TransferMode
-            ClipboardContent MouseEvent]))
+  (:import
+    [java.io
+     File]
+    [javafx.stage
+     FileChooser
+     FileChooser$ExtensionFilter]))
+
+(set! *warn-on-reflection* true)
 
 (def ctx (atom
              (fx/create-context
@@ -31,21 +37,43 @@
         @*promise)
       (f e dispatch!))))
 
-
 (defn show-file-dialog [v dispatch!]
   (fx/on-fx-thread
     (fx/instance
       (fx/create-component
         {:fx/type fx/ext-instance-factory
-         :create #(dispatch! (assoc (:on-choose v) :files
-                                    (-> (javafx.stage.FileChooser.)
-                                        (.showOpenMultipleDialog nil))))}))))
+         :create #(dispatch!
+                    (let [fc (doto (FileChooser.)
+                               (.setTitle "Escolher arquivo(s)"))]
+                      (-> fc
+                          (.getExtensionFilters)
+                          (.addAll
+                            (to-array
+                              [(FileChooser$ExtensionFilter.
+                                 "PDFs ou Imagens"
+                                 ["*.pdf" "*.png" "*.jpg"])
+                               (FileChooser$ExtensionFilter.
+                                 "PDFs" ["*.pdf"])])))
+                      (assoc (:on-choose v) :files
+                             (-> fc
+                                 (.showOpenMultipleDialog nil)))))}))))
 
 (defn save-pdf [v _]
   (when-let [files (some->> (:files v)
-                            (map #(.getPath %)))]
-    (pdf/merge-pdfs :input files
-                    :output "foo.pdf")))
+                            (map (fn [^java.io.File f]
+                                   (.getPath f))))]
+    (pdf/join files "foo.pdf")))
+
+(defn ext [^File f]
+  (let [s (.getName f)]
+    (subs s (+ 1 (clojure.string/last-index-of s ".")))))
+
+(defn add-files [{:keys [files]} _]
+  (let [files (map (fn [f]
+                     (if-not (= "pdf" (ext f))
+                       (pdf/img->pdf f)
+                       f)) files)]
+    (swap! ctx fx/swap-context update :files concat files)))
 
 (def event-handler
   (-> e/event-handler
@@ -55,8 +83,9 @@
         {:context (fx/make-reset-effect ctx)
          :dispatch fx/dispatch-effect
          :save-pdf save-pdf
+         :add-files add-files
          :file-dialog show-file-dialog})
-      (wrap-async)))
+      #_(wrap-async)))
 
 (def renderer
   (fx/create-renderer

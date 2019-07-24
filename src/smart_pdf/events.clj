@@ -44,7 +44,8 @@
 
 (defmethod event-handler ::add-file
   [{:keys [fx/context files]}]
-  {:context (fx/swap-context context update :files into files)})
+  {:add-files {:context context
+              :files files}})
 
 (defmethod event-handler ::file-click
   [{:keys [fx/context click-target] :as e}]
