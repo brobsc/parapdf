@@ -5,8 +5,6 @@
     [smart-pdf.tools.pdf :as pdf]
     [smart-pdf.events :as e])
   (:import
-    [java.io
-     File]
     [javafx.stage
      FileChooser
      FileChooser$ExtensionFilter]))
@@ -64,15 +62,8 @@
                                    (.getPath f))))]
     (pdf/join files "foo.pdf")))
 
-(defn ext [^File f]
-  (let [s (.getName f)]
-    (subs s (+ 1 (clojure.string/last-index-of s ".")))))
-
 (defn add-files [{:keys [files on-add]} dispatch!]
-  (let [files (map (fn [f]
-                     (if-not (= "pdf" (ext f))
-                       (pdf/img->pdf f)
-                       f)) files)]
+  (let [files (map pdf/file->pdf files)]
     (dispatch! (assoc on-add :files files))))
 
 (defn optimize-pdf [{:keys [file]} dispatch!]
@@ -93,7 +84,7 @@
          :add-files add-files
          :optimize-pdf optimize-pdf
          :file-dialog show-file-dialog})
-      (wrap-async)))
+      #_(wrap-async)))
 
 (def renderer
   (fx/create-renderer

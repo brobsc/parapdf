@@ -1,17 +1,15 @@
 (ns smart-pdf.tools.pdf
   (:require
-    [pdfboxing.merge :as m]
-    [pdfboxing.split :as s])
+    [clojure.string :as string]
+    [clojure.java.io :as io]
+    [pdfboxing.merge :as m])
   (:import
     [java.io
      File]
-    [java.awt.image
-     BufferedImage]
     [org.apache.pdfbox.pdmodel
      PDDocument
      PDPage
-     PDPageContentStream
-     PDPageContentStream$AppendMode]
+     PDPageContentStream]
     [org.apache.pdfbox.pdmodel.graphics.image
      PDImageXObject]
     [org.apache.pdfbox.pdmodel.common
@@ -19,23 +17,80 @@
     [org.apache.pdfbox.tools.imageio
      ImageIOUtil]
     [org.apache.pdfbox.rendering
-     ImageType
      PDFRenderer]))
 
-(defn strip-extension
-  "Removes an extension from a `s` representing a file name.
+(def ^PDRectangle A4 (PDRectangle/A4))
 
-  file.xml   -> file
-  file.2.xml -> file.2
-  file.      -> file"
-  [^String s]
-  (let [idx (clojure.string/last-index-of s ".")]
+(defprotocol NamedFile
+  "Retrieves name from objects."
+  (->name ^String [x] "Retrieves name of `x`."))
+
+(extend-protocol NamedFile
+  nil
+  (->name [_] nil)
+
+  String
+  (->name [s]
+    (let [sep (File/separator)
+          idx (string/last-index-of s sep)]
+      (if idx
+        (subs s (inc idx))
+        s)))
+
+  File
+  (->name [f] (.getName f)))
+
+(defprotocol Dimensional
+  "Things that have a width and height."
+  (width [x] "Returns width of `x`.")
+  (height [x] "Returns height of `x`."))
+
+(extend-protocol Dimensional
+  clojure.lang.PersistentVector
+  (width [[w _]] w)
+  (height [[_ h]] h)
+
+  PDRectangle
+  (width [pd] (.getWidth pd))
+  (height [pd] (.getHeight pd))
+
+  PDImageXObject
+  (width [img] (.getWidth img))
+  (height [img] (.getHeight img)))
+
+(defn dimensions
+  "Returns [width height] of `x`."
+  [x]
+  [(width x) (height x)])
+
+(defn ext
+  "Returns extension of `arg` name.
+
+  file.xml    => xml
+  file.2.xml  => xml
+  .file       => file
+  file.       => (empty)"
+  [arg]
+  (let [s (->name arg)]
+    (->> (string/last-index-of s ".")
+         (inc)
+         (subs s))))
+
+(defn strip-ext
+  "Removes possible extension from `arg` name.
+
+  file.xml   => file
+  file.2.xml => file.2
+  file.      => file"
+  [arg]
+  (let [s (->name arg)
+        idx (string/last-index-of s ".")]
     (if-not (= -1 idx)
       (subs s 0 idx)
       s)))
 
 (defn pdf->imgs
-  "Converts a `pdf` File to many images compressed to `quality`, returning a `seq` of image files."
+  "Converts a `pdf` File to many images compressed to `quality`, returning a `seq` of them."
   [^File pdf ^Float quality]
   (with-open [doc (PDDocument/load pdf)]
     (let [renderer (doto (PDFRenderer. doc)
@@ -44,7 +99,7 @@
        (map (fn [page]
               (let [bim (.renderImageWithDPI renderer page 72)
                     temp-file (File/createTempFile
-                                (str (strip-extension (.getName pdf))
+                                (str (strip-ext pdf)
                                      "-"
                                      (inc page)
                                      "-") ".jpg")]
@@ -52,66 +107,87 @@
                 temp-file))
             (range (.getNumberOfPages doc)))))))
 
-(defn fit-img
-  "Returns  [width height] of `img` fit inside an A4 doc, with optional `padding`."
-  ([^PDImageXObject img] (fit-img img 0))
-  ([^PDImageXObject img padding]
-  (let [w-ratio (/ (- (.getWidth PDRectangle/A4) padding)
-                   (.getWidth img))
-        h-ratio (/ (- (.getHeight PDRectangle/A4) padding)
-                    (.getHeight img))
-        ratio (min w-ratio h-ratio)]
-    [(* ratio (.getWidth img)) (* ratio (.getHeight img))])))
+(defn fit
+  "Returns [width height] of `a` fit inside `b`.
 
-(defn center-img
-  "Returns [x y] of a `width` and `height` centered inside an A4 doc."
-  [w h]
-  [(/ (- (.getWidth PDRectangle/A4) w) 2)
-   (/ (- (.getHeight PDRectangle/A4) h) 2)])
+  `a` and `b` must be `Dimensional`."
+  [a b]
+  (->> [b a]
+      (map dimensions)
+      (apply map /)
+      (apply min)
+      (repeat 2)
+      (map * (dimensions a))))
+
+(defn center
+  "Returns [x y] of `a` centered inside `b`.
+
+  `a` and `b` must be `Dimensional`."
+  [a b]
+  (->> [b a]
+       (map dimensions)
+       (apply map -)
+       (map #(/ % 2))
+       (map float)))
+
+(defn fit-in-a4
+  "Returns [width height] of `arg` fit inside an A4 doc."
+  [arg]
+  (fit arg A4))
+
+(defn center-in-a4
+  "Returns [x y] of `arg` centered inside an A4 doc."
+  [arg]
+  (center arg A4))
 
 (defn join
   "Joins a vector of pdfs `in` into `out`."
   [in out]
   (m/merge-pdfs :input in :output out))
 
-(defn img->pdf
-  "Returns a pdf `File` result of `img` converted to it."
-  [^File img]
-  (with-open [doc (PDDocument.)]
-    (let [img-name (-> (.getName img) (strip-extension))
-          temp-file (File/createTempFile (str img-name "-pdf") ".pdf")
-          pd-img (PDImageXObject/createFromFile (.getPath img) doc)
-          page (PDPage. PDRectangle/A4)
-          [width height] (fit-img pd-img)
-          [x y] (center-img width height)]
-      (.addPage doc page)
-      (with-open [content-stream (PDPageContentStream.
-                                   doc
-                                   page
-                                   true
-                                   false)]
-        (-> content-stream
-            (.drawImage pd-img
-                        (float x)
-                        (float y)
-                        (float width)
-                        (float height))))
-      (.save doc temp-file)
-      temp-file)))
+(defn file->pdf
+  "Returns a pdf `File` result of `f` converted to it, or `f` if it's already one.
+
+  Currently only processes image files (png/jpeg)."
+  [f]
+  (let [f (io/file f)]
+    (if-not (= "pdf" (ext f))
+      (with-open [doc (PDDocument.)]
+        (let [img-name (strip-ext f)
+              temp-file (File/createTempFile (str img-name "-pdf") ".pdf")
+              pd-img (PDImageXObject/createFromFile (.getPath f) doc)
+              page (PDPage. PDRectangle/A4)
+              [width height] (fit-in-a4 pd-img)
+              [x y] (center-in-a4 [width height])]
+          (.addPage doc page)
+          (with-open [content-stream (PDPageContentStream.
+                                       doc
+                                       page
+                                       true
+                                       false)]
+            (-> content-stream
+                (.drawImage pd-img
+                            (float x)
+                            (float y)
+                            (float width)
+                            (float height))))
+          (.save doc temp-file)
+          temp-file))
+      f)))
 
 (defn optimize-pdf
   "Returns compressed `pdf`.
 
-  Attemps to optimize by reducing its quality by 30%."
+  Attempts to optimize by reducing its quality by 30%."
   [^File pdf]
   (let [images (pdf->imgs pdf 0.7)
         temp-file (File/createTempFile
-                    (str (strip-extension (.getName pdf)) "-opt")
+                    (str (strip-ext pdf) "-opt")
                     ".pdf")
-        path (.getPath temp-file) ]
+        path (.getPath temp-file)]
 
-    (as-> images  images
-      (map img->pdf images)
+    (as-> images images
+      (map file->pdf images)
       (map (fn [^File f] (.getPath f)) images)
       (join images path))
      temp-file))
