@@ -50,15 +50,13 @@
 (defn img->pdf
   "Converts an `img` File object to a PDF. Returns a PDF File object."
   [^File img]
-  (let [img-name (-> (.getName img) (strip-extension))
-        temp-file (File/createTempFile (str img-name "-pdf") ".pdf")
-        doc (PDDocument.)
-        pd-img (PDImageXObject/createFromFile (.getPath img) doc)
-        page (PDPage. PDRectangle/A4)
-        [width height] (fit-img pd-img 20)
-        [x y] (center-img width height)]
-
-    (with-open [doc (PDDocument.)]
+  (with-open [doc (PDDocument.)]
+    (let [img-name (-> (.getName img) (strip-extension))
+          temp-file (File/createTempFile (str img-name "-pdf") ".pdf")
+          pd-img (PDImageXObject/createFromFile (.getPath img) doc)
+          page (PDPage. PDRectangle/A4)
+          [width height] (fit-img pd-img 20)
+          [x y] (center-img width height)]
       (.addPage doc page)
       (with-open [content-stream (PDPageContentStream.
                                    doc
@@ -71,5 +69,5 @@
                         (float y)
                         (float width)
                         (float height))))
-      (.save doc "nada.pdf"))
-    temp-file))
+      (.save doc temp-file)
+      temp-file)))
