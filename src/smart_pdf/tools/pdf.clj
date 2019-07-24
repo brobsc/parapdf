@@ -139,7 +139,7 @@
     (let [renderer (doto (PDFRenderer. doc)
                      (.setSubsamplingAllowed true))]
       (doall
-       (map (fn [page]
+       (pmap (fn [page]
               (let [bim (.renderImageWithDPI renderer page 72)
                     temp-file (File/createTempFile
                                 (str (strip-ext pdf)
@@ -193,7 +193,7 @@
         path (.getPath temp-file)]
 
     (as-> images images
-      (map file->pdf images)
+      (doall (pmap file->pdf images))
       (map (fn [^File f] (.getPath f)) images)
       (join images path))
      temp-file))
