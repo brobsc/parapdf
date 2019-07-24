@@ -181,10 +181,10 @@
           temp-file))
       f)))
 
-(defn optimize-pdf
-  "Returns compressed `pdf`.
+(defn compress
+  "Returns compressed `pdf` `File`.
 
-  Attempts to optimize by reducing its quality by 10%."
+  Reduces dpi to 72 and quality by 10%."
   [^File pdf]
   (let [images (pdf->imgs pdf 0.9)
         temp-file (File/createTempFile

@@ -67,7 +67,7 @@
     (dispatch! (assoc on-add :files files))))
 
 (defn optimize-pdf [{:keys [file]} dispatch!]
-  (let [optimized (pdf/optimize-pdf file)]
+  (let [optimized (pdf/compress file)]
     (dispatch! {:event/type ::e/sub-file
                 :src file
                 :fx/sync true
