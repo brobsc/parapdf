@@ -21,24 +21,32 @@
 
 (def ^PDRectangle A4 (PDRectangle/A4))
 
-(defprotocol NamedFile
-  "Retrieves name from objects."
-  (->name ^String [x] "Retrieves name of `x`."))
+(defprotocol Filey
+  "Objects representing files or quasi-files.
 
-(extend-protocol NamedFile
+  Provides 'light-weight' results for pure strings (refrains from transforming it into a file whenever possible)."
+  (fname ^String [x] "Retrieves name of `x`.")
+  (fpath ^String [x] "Retrieves canonical path of `x`."))
+
+(extend-protocol Filey
   nil
-  (->name [_] nil)
+  (fname [_] nil)
 
   String
-  (->name [s]
+  (fname [s]
     (let [sep (File/separator)
           idx (string/last-index-of s sep)]
       (if idx
         (subs s (inc idx))
         s)))
+  (fpath [s]
+    (if-not (= \/ (.charAt s 0))
+      (-> s (File.) (.getCanonicalPath))
+      s))
 
   File
-  (->name [f] (.getName f)))
+  (fname [f] (.getName f))
+  (fpath [f] (.getCanonicalPath f)))
 
 (defprotocol Dimensional
   "Things that have a width and height."
@@ -71,7 +79,7 @@
   .file       => file
   file.       => (empty)"
   [arg]
-  (let [s (->name arg)]
+  (let [s (fname arg)]
     (->> (string/last-index-of s ".")
          (inc)
          (subs s))))
@@ -88,7 +96,7 @@
   file.2.xml => file.2
   file.      => file"
   [arg]
-  (let [s (->name arg)
+  (let [s (fname arg)
         idx (string/last-index-of s ".")]
     (if idx
       (subs s 0 idx)
@@ -130,7 +138,7 @@
 (defn join
   "Joins a vector of pdfs `in` into `out`."
   [in out]
-  (m/merge-pdfs :input in :output out))
+  (m/merge-pdfs :input (map fpath in) :output out))
 
 (defn pdf->imgs
   "Converts a `pdf` File to many images compressed to `quality`, returning a `seq` of them."
@@ -139,14 +147,14 @@
     (let [renderer (doto (PDFRenderer. doc)
                      (.setSubsamplingAllowed true))]
       (doall
-       (pmap (fn [page]
+       (map (fn [page]
               (let [bim (.renderImageWithDPI renderer page 72)
                     temp-file (File/createTempFile
                                 (str (strip-ext pdf)
                                      "-"
                                      (inc page)
                                      "-") ".jpg")]
-                (ImageIOUtil/writeImage bim (.getPath temp-file) 72 quality)
+                (ImageIOUtil/writeImage bim (fpath temp-file) 72 quality)
                 temp-file))
             (range (.getNumberOfPages doc)))))))
 
@@ -161,7 +169,7 @@
       (with-open [doc (PDDocument.)]
         (let [img-name (strip-ext f)
               temp-file (File/createTempFile (str img-name "-pdf") ".pdf")
-              pd-img (PDImageXObject/createFromFile (.getPath f) doc)
+              pd-img (PDImageXObject/createFromFile (fpath f) doc)
               page (PDPage. PDRectangle/A4)
               [width height] (fit-in-a4 pd-img)
               [x y] (center-in-a4 [width height])]
@@ -190,10 +198,9 @@
         temp-file (File/createTempFile
                     (str (strip-ext pdf) "-opt")
                     ".pdf")
-        path (.getPath temp-file)]
-
+        path (fpath temp-file)]
     (as-> images images
       (doall (pmap file->pdf images))
-      (map (fn [^File f] (.getPath f)) images)
+      (map (fn [^File f] (fpath f)) images)
       (join images path))
      temp-file))

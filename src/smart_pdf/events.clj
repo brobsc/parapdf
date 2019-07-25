@@ -1,5 +1,7 @@
 (ns smart-pdf.events
-  (:require [cljfx.api :as fx])
+  (:require
+    [cljfx.api :as fx]
+    [clojure.pprint :refer [pprint]])
   (:import [javafx.application Platform]))
 
 (defmulti event-handler :event/type)
@@ -44,13 +46,14 @@
 
 (defmethod event-handler ::add-file
   [{:keys [files]}]
-  {:add-files {:files files
-               :on-add {:event/type ::concat-files
-                        :fx/sync true}}})
+  {:file {:files files
+          :method :add
+          :on-success {:event/type ::conj-file
+                       :fx/sync true}}})
 
-(defmethod event-handler ::concat-files
-  [{:keys [fx/context files]}]
-  {:context (fx/swap-context context update :files concat files)})
+(defmethod event-handler ::conj-file
+  [{:keys [fx/context result]}]
+  {:context (fx/swap-context context update :files conj result)})
 
 (defmethod event-handler ::file-click
   [{:keys [fx/context click-target] :as e}]
@@ -59,18 +62,24 @@
 
 (defmethod event-handler ::save-pdf
   [{:keys [fx/context]}]
-  {:save-pdf {:files (fx/sub context :files)}})
+  {:file {:files (fx/sub context :files)
+          :method :save
+          :target "foo.pdf"
+          :on-success {:event/type ::saved}}})
 
 (defmethod event-handler ::optimize-pdf
   [{:keys [file]}]
-  {:optimize-pdf {:file file}})
+  {:file {:files [file]
+         :method :compress
+         :on-success {:event/type ::sub-file
+                      :src file}}})
 
 (defmethod event-handler ::sub-file
-  [{:keys [src target fx/context]}]
+  [{:keys [src fx/context] target :result}]
   {:context
    (let [files (fx/sub context :files)
          files (if-not (= target src)
-                 (let [ idx-src (.indexOf files src)]
+                 (let [idx-src (.indexOf files src)]
                    (-> (vec files)
                        (assoc idx-src target)))
                  files)]
@@ -79,5 +88,8 @@
 
 (defmethod event-handler :default
   [e]
-  (println "Unhadled event" (:event/type e))
-  (prn e))
+  (println "==============")
+  (println "Unhandled event" (:event/type e))
+  (println "==============")
+  (println)
+  (pprint e))

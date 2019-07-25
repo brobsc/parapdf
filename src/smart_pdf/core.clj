@@ -56,22 +56,15 @@
                              (-> fc
                                  (.showOpenMultipleDialog nil)))))}))))
 
-(defn save-pdf [v _]
-  (when-let [files (some->> (:files v)
-                            (map (fn [^java.io.File f]
-                                   (.getPath f))))]
-    (pdf/join files "foo.pdf")))
-
-(defn add-files [{:keys [files on-add]} dispatch!]
-  (let [files (map pdf/file->pdf files)]
-    (dispatch! (assoc on-add :files files))))
-
-(defn optimize-pdf [{:keys [file]} dispatch!]
-  (let [optimized (pdf/compress file)]
-    (dispatch! {:event/type ::e/sub-file
-                :src file
-                :fx/sync true
-                :target optimized})))
+(defn file-effect [{:keys [files method target on-success]}
+                  dispatch!]
+  (let [result (condp = method
+                 :compress (map pdf/compress files)
+                 :add (map pdf/file->pdf files)
+                 :save (pdf/join files target)
+                 files)]
+    (doall
+      (map #(dispatch! (assoc on-success :result %)) result))))
 
 (def event-handler
   (-> e/event-handler
@@ -80,9 +73,7 @@
       (fx/wrap-effects
         {:context (fx/make-reset-effect ctx)
          :dispatch fx/dispatch-effect
-         :save-pdf save-pdf
-         :add-files add-files
-         :optimize-pdf optimize-pdf
+         :file file-effect
          :file-dialog show-file-dialog})
       #_(wrap-async)))
 
