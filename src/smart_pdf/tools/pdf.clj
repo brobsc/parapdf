@@ -201,6 +201,6 @@
         path (fpath temp-file)]
     (as-> images images
       (doall (pmap file->pdf images))
-      (map (fn [^File f] (fpath f)) images)
+      (map fpath images)
       (join images path))
      temp-file))
