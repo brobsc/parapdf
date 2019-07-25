@@ -65,7 +65,7 @@
     (if idx (subs s 0 idx) s)))
 
 (defn temp-file-from
-  "Creates a temp file from `base-file`, with optional `ext` and `number`.
+  "Creates a temp file from `base-file`, with optional `:ext` and `:number`.
 
   /path/to/file/myfile.pdf -> /<temp-path>/myfile-pdf<rand>.pdf
   /path/to/file/myfile.pdf :ext jpg -> .../myfile-pdf<rand>.jpg

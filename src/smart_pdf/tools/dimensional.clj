@@ -1,6 +1,7 @@
 (ns smart-pdf.tools.dimensional
   (:import
     [org.apache.pdfbox.pdmodel.graphics.image
+     JPEGFactory
      PDImageXObject]
     [org.apache.pdfbox.pdmodel.common
      PDRectangle]))
@@ -67,3 +68,6 @@
 
 (defn pd-img-from-file ^PDImageXObject [path doc]
   (PDImageXObject/createFromFileByContent path doc))
+
+(defn pd-img-from-jpeg ^PDImageXObject [doc img quality]
+  (JPEGFactory/createFromImage doc img quality))
