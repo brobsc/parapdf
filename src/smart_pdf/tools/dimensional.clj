@@ -1,10 +1,10 @@
 (ns smart-pdf.tools.dimensional
   (:import
+    [org.apache.pdfbox.pdmodel.common
+     PDRectangle]
     [org.apache.pdfbox.pdmodel.graphics.image
      JPEGFactory
-     PDImageXObject]
-    [org.apache.pdfbox.pdmodel.common
-     PDRectangle]))
+     PDImageXObject]))
 
 (set! *warn-on-reflection* true)
 

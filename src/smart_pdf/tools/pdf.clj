@@ -1,22 +1,20 @@
 (ns smart-pdf.tools.pdf
   (:require
     [clojure.java.io :as io]
-    [smart-pdf.tools.file :refer [fpath pdf?
-                                  temp-file-from]]
-    [smart-pdf.tools.dimensional :refer [A4
-                                         pd-img-from-file
-                                         pd-img-from-jpeg
-                                         fit-in-a4 center-in-a4]])
+    [smart-pdf.tools
+     [dimensional :refer [A4 center-in-a4 fit-in-a4
+                          pd-img-from-file pd-img-from-jpeg]]
+     [file :refer [fpath pdf? temp-file-from]]])
   (:import
     [java.io
      File
      InputStream]
+    [org.apache.pdfbox.multipdf
+     PDFMergerUtility]
     [org.apache.pdfbox.pdmodel
      PDDocument
      PDPage
      PDPageContentStream]
-    [org.apache.pdfbox.multipdf
-     PDFMergerUtility]
     [org.apache.pdfbox.rendering
      PDFRenderer]))
 
