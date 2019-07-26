@@ -65,17 +65,19 @@
     (if idx (subs s 0 idx) s)))
 
 (defn temp-file-from
-  "Creates a temp file from `base-file`, with optional `:ext` and `:number`.
+  "Creates a temp file from `base-file`.
 
-  /path/to/file/myfile.pdf -> /<temp-path>/myfile-pdf<rand>.pdf
-  /path/to/file/myfile.pdf :ext jpg -> .../myfile-pdf<rand>.jpg
-  /path/to/file/myfile.pdf :ext jpg :number 1 -> .../myfile-pdf-1<rand>.jpg"
+  Accepts optional `:ext` and `:number`.
+
+  /path/to/file/myfile.pdf                    => /<temp-path>/myfile-pdf<rand>.pdf
+  /path/to/file/myfile.pdf :ext jpg           => .../myfile-pdf<rand>.jpg
+  /path/to/file/myfile.pdf :ext jpg :number 1 => .../myfile-pdf-1<rand>.jpg"
   ^File
   [base-file & {:keys [number] extension :ext}]
   (let [base-ext (ext base-file)]
     (File/createTempFile (str (strip-ext base-file)
-                            "-"
-                            base-ext
-                            "-"
-                            number)
-                       (str "." (or extension base-ext)))))
+                              "-"
+                              base-ext
+                              "-"
+                              number)
+                         (str "." (or extension base-ext)))))
