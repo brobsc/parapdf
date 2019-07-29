@@ -66,8 +66,10 @@
   [arg]
   (center arg A4))
 
-(defn pd-img-from-file ^PDImageXObject [path doc]
-  (PDImageXObject/createFromFileByContent path doc))
+(defn pd-img-from-file ^PDImageXObject
+  [file doc]
+  (PDImageXObject/createFromFileByContent file doc))
 
-(defn pd-img-from-jpeg ^PDImageXObject [doc img quality]
+(defn pd-img-from-jpeg ^PDImageXObject
+  [img doc quality]
   (JPEGFactory/createFromImage doc img quality))
