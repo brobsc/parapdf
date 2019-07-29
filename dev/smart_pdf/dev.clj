@@ -1,9 +1,10 @@
 (ns smart-pdf.dev
   (:require [cider.nrepl :refer [cider-middleware]]
+            [clojure.java.io :as io]
             [nrepl.server :as server]
+            refactor-nrepl.middleware
             [reply.main :as reply]
-            [refactor-nrepl middleware]
-            [smart-pdf.core]))
+            smart-pdf.core))
 
 (def wrapped-handler
   (apply server/default-handler
@@ -12,13 +13,11 @@
 
 (defn -main []
   (println "Dev started...")
-  (let [port (+ 6690 (rand-int 100))]
-    (spit (doto (clojure.java.io/file "./.nrepl-port") .deleteOnExit) port)
-    (with-open [s (server/start-server :port port :handler wrapped-handler)]
+  (with-open [s (server/start-server
+                  :handler wrapped-handler)]
+    (let [port (:port s)]
+      (spit (doto (io/file "./.nrepl-port") .deleteOnExit) port)
       (println (format "Started nREPL server at port %d" port))
       (reply/launch-nrepl {:attach (str port)})))
   (shutdown-agents)
   (System/exit 0))
-
-;; /usr/local/bin/clojure -Sdeps '{:deps {nrepl {:mvn/version "0.6.0"} refactor-nrepl {:mvn/version "2.4.0"} cider/cider-nrepl {:mvn/version "0.21.2-SNAPSHOT"}}}' -R:dev -m nrepl.cmdline --middleware '["refactor-nrepl.middleware/wrap-refactor", "cider.nrepl/cider-middleware"]'
-
