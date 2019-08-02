@@ -1,7 +1,7 @@
-(ns smart-pdf.components
+(ns parapdf.components
   (:require
     [cljfx.api :as fx]
-    [smart-pdf.events :as events]
+    [parapdf.events :as events]
     [clojure.java.io :as io]))
 
 (defn add-file-button [_]

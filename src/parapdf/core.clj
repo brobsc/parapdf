@@ -1,9 +1,9 @@
-(ns smart-pdf.core
+(ns parapdf.core
   (:require
     [cljfx.api :as fx]
-    [smart-pdf.views :as v]
-    [smart-pdf.tools.pdf :as pdf]
-    [smart-pdf.events :as e])
+    [parapdf.views :as v]
+    [parapdf.tools.pdf :as pdf]
+    [parapdf.events :as e])
   (:import
     [javafx.stage
      FileChooser
@@ -89,8 +89,3 @@
   (fx/mount-renderer
     ctx
     renderer))
-
-(defn -main
-  "FIXME: Add doc"
-  [& args]
-  (println "Hello World!"))

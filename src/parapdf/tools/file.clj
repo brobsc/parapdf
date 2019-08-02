@@ -1,4 +1,4 @@
-(ns smart-pdf.tools.file
+(ns parapdf.tools.file
   (:require
     [clojure.string :as string])
   (:import

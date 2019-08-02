@@ -1,7 +1,7 @@
-(ns smart-pdf.tools.pdf-test
+(ns parapdf.tools.pdf-test
   (:require
     [clojure.test :refer :all]
-    [smart-pdf.tools.pdf :refer :all]))
+    [parapdf.tools.pdf :refer :all]))
 
 (deftest ext-strip-ext-test
   (are [result input] (= result ((juxt strip-ext ext) input))

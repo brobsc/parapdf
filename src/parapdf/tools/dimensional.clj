@@ -1,4 +1,4 @@
-(ns smart-pdf.tools.dimensional
+(ns parapdf.tools.dimensional
   (:import
     [java.io
      File]

@@ -1,6 +1,6 @@
-(ns smart-pdf.views
+(ns parapdf.views
   (:require [cljfx.api :as fx]
-            [smart-pdf.components :as c]))
+            [parapdf.components :as c]))
 
 (defn file-chooser [{:keys [fx/context]}]
   {:fx/type :file-chooser

@@ -1,4 +1,4 @@
-(ns smart-pdf.events
+(ns parapdf.events
   (:require
     [cljfx.api :as fx]
     [clojure.pprint :refer [pprint]])

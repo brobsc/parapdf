@@ -1,10 +1,10 @@
-(ns smart-pdf.dev
+(ns parapdf.dev
   (:require [cider.nrepl :refer [cider-middleware]]
             [clojure.java.io :as io]
             [nrepl.server :as server]
             refactor-nrepl.middleware
             [reply.main :as reply]
-            smart-pdf.core))
+            parapdf.core))
 
 (def wrapped-handler
   (apply server/default-handler

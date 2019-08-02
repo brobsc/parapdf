@@ -1,7 +1,7 @@
-(ns smart-pdf.tools.pdf
+(ns parapdf.tools.pdf
   (:require
     [clojure.java.io :as io]
-    [smart-pdf.tools
+    [parapdf.tools
      [dimensional :refer [append-image!]]
      [file :refer [fpath pdf? temp-file-from]]])
   (:import
