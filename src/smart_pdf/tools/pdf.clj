@@ -2,8 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [smart-pdf.tools
-     [dimensional :refer [A4 center-in-a4 fit-in-a4
-                          pd-img-from-file pd-img-from-jpeg]]
+     [dimensional :refer [append-image!]]
      [file :refer [fpath pdf? temp-file-from]]])
   (:import
     [java.io
@@ -12,9 +11,7 @@
     [org.apache.pdfbox.multipdf
      PDFMergerUtility]
     [org.apache.pdfbox.pdmodel
-     PDDocument
-     PDPage
-     PDPageContentStream]
+     PDDocument]
     [org.apache.pdfbox.rendering
      PDFRenderer]))
 
@@ -41,45 +38,13 @@
                 (.renderImageWithDPI renderer page 96))
               (range (.getNumberOfPages doc)))))))
 
-(defn- append-pd-image
-  [pd-img ^PDDocument doc]
-  (let [[width height] (fit-in-a4 pd-img)
-        [x y] (center-in-a4 [width height])
-        page (PDPage. A4)]
-    (.addPage doc page)
-    (with-open [content-stream (PDPageContentStream.
-                                 doc
-                                 page
-                                 true
-                                 false)]
-      (-> content-stream
-          (.drawImage pd-img
-                      (float x)
-                      (float y)
-                      (float width)
-                      (float height))))))
-
-(defmulti append-image!
-  "Appends `img` to existing `doc`.
-
-  `img` must be a `File` or `BufferedImage`. If it's the latter, `quality` must be provided."
-  {:arglists '([img doc quality])}
-  (fn [img _ _] (class img)))
-
-(defmethod append-image! File
-  [file ^PDDocument doc _]
-  (append-pd-image (pd-img-from-file file doc) doc))
-
-(defmethod append-image! java.awt.image.BufferedImage
-  [img ^PDDocument doc quality]
-  (append-pd-image (pd-img-from-jpeg img doc quality) doc))
 
 (defn imgs->pdf
   "Writes to `out` all `imgs` compressed to `quality`."
   [^File out quality imgs]
   (with-open [doc (PDDocument.)]
     (doseq [img imgs]
-      (append-image! img doc quality))
+      (append-image! doc img :quality quality))
     (.save doc out))
   out)
 
@@ -92,7 +57,7 @@
     (if-not (pdf? f)
       (with-open [doc (PDDocument.)]
         (let [temp-file (temp-file-from f :ext "pdf")]
-          (append-image! f doc 1.0)
+          (append-image! doc f)
           (.save doc temp-file)
           temp-file))
       f)))
